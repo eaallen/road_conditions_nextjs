@@ -2,12 +2,11 @@ export interface RoadImage {
     name: string
     imgSrc: string
     isSign?: boolean
+    commonName?: string
 }
 
 export interface Route {
     roadImages: RoadImage[]
-    start: Destination
-    end: Destination
     name: string
 }
 

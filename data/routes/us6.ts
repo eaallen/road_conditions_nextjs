@@ -1,10 +1,11 @@
-import { Route } from "./types"
+import { Route } from "../types"
 
 const HIGHWAY6: Route = {
     roadImages: [
         {
             name: "Windmills at Spanish Fork",
             imgSrc: "http://udottraffic.utah.gov/1_devices/aux18032.jpeg",
+            commonName: "Spanish Fork",
         },
         {
             name: "Billies Mtn",
@@ -46,10 +47,9 @@ const HIGHWAY6: Route = {
         {
             name: "Helper Town",
             imgSrc: "http://udottraffic.utah.gov/1_devices/aux248.jpeg",
+            commonName: "Helper"
         },
     ],
-    start: "Spanish Fork",
-    end: "Helper",
     name: "US 6",
 }
 

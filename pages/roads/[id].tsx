@@ -1,38 +1,36 @@
 import { Box, FormControl, MenuItem, Select, SelectChangeEvent, Typography } from "@mui/material"
 import { useState } from "react"
-import { RoadImage, Route } from "./data/types";
+import { RoadImage, Route } from "../../data/types";
 import Grid from '@mui/material/Unstable_Grid2';
 import ImageModal from "../../comps/modal/ImageModal";
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { GetStaticPathsResult, GetStaticPropsContext, GetStaticPropsResult } from "next";
-import {HIGHWAY6} from './data/routes'
-import reverse from "../../helpers/array/reverse";
+import routes, { RoutesMap } from "../../data/routes";
 
 type Props = {
     route: Route
 }
 
 export default function Road({ route }: Props) {
-    const [start, setStart] = useState(route.start)
-    const [end, setEnd] = useState(route.end)
+    const commonRoadIamges = route.roadImages.filter(x => x.commonName !== undefined)
+
+    const [start, setStart] = useState(commonRoadIamges[0].name)
+    const [end, setEnd] = useState(commonRoadIamges[commonRoadIamges.length - 1].name)
 
     const handleChange = (event: SelectChangeEvent) => {
         const selelctedStart = event.target.value
         setStart(selelctedStart);
-        if (selelctedStart === route.start) {
-            setEnd(route.end)
-        } else {
-            setEnd(route.start)
-        }
     };
 
-    let imageList: RoadImage[] = route.roadImages
-    if (end !== route.end) {
-        imageList = reverse(imageList)
+    const changeEnd = (event: SelectChangeEvent) => {
+        setEnd(event.target.value)
     }
+
+    const imageList: RoadImage[] = makeRoute(route.roadImages, start, end)
 
     return <>
         <Box>
+            <Typography align="center" variant="h3">{route.name}</Typography>
             <Grid container alignItems="center" justifyContent="center" sx={{ textAlign: 'center' }} columns={3}>
                 <Grid xs={1}>
                     <Typography variant="overline"> From </Typography>
@@ -47,9 +45,11 @@ export default function Road({ route }: Props) {
                         <Select
                             value={start}
                             onChange={handleChange}
+                            sx={{ width: 120 }}
                         >
-                            <MenuItem value={route.start}>{route.start}</MenuItem>
-                            <MenuItem value={route.end}>{route.end}</MenuItem>
+                            {commonRoadIamges.map(x => (
+                                <MenuItem key={x.imgSrc} value={x.name}>{x.commonName ?? x.name}</MenuItem>
+                            ))}
                         </Select>
                     </FormControl>
                 </Grid>
@@ -57,37 +57,66 @@ export default function Road({ route }: Props) {
                     <ArrowForwardIcon />
                 </Grid>
                 <Grid xs={1}>
-                    <Typography> {end} </Typography>
+                    <FormControl sx={{ m: 1 }}>
+                        <Select
+                            value={end}
+                            onChange={changeEnd}
+                            sx={{ width: 100 }}
+                        >
+                            {commonRoadIamges.map(x => (
+                                <MenuItem key={x.imgSrc} value={x.name}>{x.commonName ?? x.name}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
                 </Grid>
 
             </Grid>
         </Box>
         <Box sx={{ textAlign: "center" }}>
-
             <Grid container spacing={1}>
                 {imageList.map((item, idx) => {
                     return (
                         <Grid key={item.imgSrc} xs={item.isSign ? 12 : 6}>
                             <ImageModal>
                                 <img
-                                    src={`${item.imgSrc}?w=2408`}
+                                    src={`${item.imgSrc}`}
                                     alt={item.name}
                                     style={{ maxWidth: "100%" }}
-
                                 />
-                                <Typography>{idx + 1}. {item.name}</Typography>
+                                {item.commonName && item.commonName !== "" ? <>
+                                    <Typography>{idx + 1}. {item.commonName}</Typography>
+                                    <Typography variant="caption">{item.name}</Typography>
+                                </> :
+                                    <Typography>{idx + 1}. {item.name}</Typography>}
+
                             </ImageModal>
                         </Grid>
                     );
                 })}
             </Grid>
-
         </Box>
     </>
 }
 
+function makeRoute(roadImages: RoadImage[], start: string, end: string) {
+    const route: RoadImage[] = []
+    const startidx = roadImages.findIndex(x => x.name === start)
+    const endidx = roadImages.findIndex(x => x.name === end)
+
+    if (startidx < endidx) {
+        for (let i = startidx; i <= endidx; i++) {
+            route.push(roadImages[i])
+        }
+    } else {
+        for (let i = endidx; i <= startidx; i++) {
+            route.unshift(roadImages[i])
+        }
+    }
+    return route
+}
+
 type PathParams = {
-    id: string;
+    id: keyof RoutesMap;
 }
 
 export const getStaticPaths = async ({ }): Promise<
@@ -95,22 +124,21 @@ export const getStaticPaths = async ({ }): Promise<
 > => {
     return {
         paths: [
-            routeParam('us6')
+            routeParam('us6'),
+            routeParam('i15'),
         ],
         fallback: false,
     }
 }
 
 export async function getStaticProps({ params }: GetStaticPropsContext<PathParams>): Promise<GetStaticPropsResult<Props>> {
-    return {
-        props: {
-            route: HIGHWAY6
-        },
-    };
+    const props = {
+        route: routes[params?.id ?? 'us6']
+    }
+    console.log("----------_>", props)
+    return { props };
 }
 
-function routeParam(id: string) {
-    return { params: { id } }
+function routeParam(id: keyof RoutesMap) {
+    return { params: { id: id } }
 }
-
-const DEFAULT = 'us6'
